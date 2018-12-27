@@ -859,6 +859,11 @@ void Options::Options::init()
     _lookup.insert(&_ageWeightRatioShapeFrequency);
     _ageWeightRatioShapeFrequency.tag(OptionTag::SATURATION);
 
+    _randomAWR = BoolOptionValue("random_awr","rawr",false);
+    _lookup.insert(&_randomAWR);
+    _randomAWR.tag(OptionTag::SATURATION);
+    _randomAWR.setExperimental();
+
       _literalMaximalityAftercheck = BoolOptionValue("literal_maximality_aftercheck","lma",false);
       _lookup.insert(&_literalMaximalityAftercheck);
       _literalMaximalityAftercheck.tag(OptionTag::SATURATION);
