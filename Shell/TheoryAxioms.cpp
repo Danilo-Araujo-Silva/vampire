@@ -995,9 +995,9 @@ void TheoryAxioms::addConstantArrayAxiom(unsigned arraySort) {
   TermList const_x(Term::create(fun_const, 1, argx));
   TermList argCxy[] = {const_x, y};
   TermList selectCxy(Term::create(pred_select, 2, argCxy));
-  Formula* ax = new AtomicFormula(Literal::createEquality(true, selectCxy, x, innerSort));
+  Literal* lit = Literal::createEquality(true, selectCxy, x, innerSort);
+  addTheoryUnitClause(lit, CHEAP);
 
-  addAndOutputTheoryUnit(new FormulaUnit(ax, new Inference(Inference::THEORY), Unit::AXIOM), CHEAP); //TODO:decide if const arrays are cheap
 } //addConstantArrayAxiom
 
 // adds axioms: ~(J < I) | select(merge(X,Y,I),J) = select(X,J)
