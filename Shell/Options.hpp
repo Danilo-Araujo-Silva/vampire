@@ -1936,6 +1936,7 @@ public:
   bool smtForGround() const { return _smtForGround.actualValue; }
   TheoryInstSimp theoryInstAndSimp() const { return _theoryInstAndSimp.actualValue; }
   ArrayInst arrayInst() const { return _arrayInst.actualValue; }
+  bool generalizeTheoryInstance() const { return _generalizeTheoryInstance.actualValue; }
 #endif
   UnificationWithAbstraction unificationWithAbstraction() const { return _unificationWithAbstraction.actualValue; }
   bool fixUWA() const { return _fixUWA.actualValue; }
@@ -2461,6 +2462,7 @@ private:
   BoolOptionValue _smtForGround;
   ChoiceOptionValue<TheoryInstSimp> _theoryInstAndSimp;
   ChoiceOptionValue<ArrayInst> _arrayInst;
+  BoolOptionValue _generalizeTheoryInstance;
 #endif
   ChoiceOptionValue<UnificationWithAbstraction> _unificationWithAbstraction;
   BoolOptionValue _fixUWA;
