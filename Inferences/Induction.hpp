@@ -57,7 +57,9 @@ public:
   }
 
   // Returns transformed lit for the first 2^(_occurences) - 1 calls, then returns nullptr.
-  Literal* transformSubset();
+  // Sets rule to INDUCTION if all occurrences were transformed, otherwise sets rule to
+  // GEN_INDUCTION.
+  Literal* transformSubset(Inference::Rule& rule);
 
 protected:
   virtual TermList transformSubterm(TermList trm);
@@ -107,12 +109,12 @@ public:
 private:
   void process(Clause* premise, Literal* lit);
 
-  void performMathInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* t); 
-  void performMathInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* t);
+  void performMathInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* t, Inference::Rule rule); 
+  void performMathInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* t, Inference::Rule rule);
 
-  void performStructInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* t);
-  void performStructInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* t);
-  void performStructInductionThree(Clause* premise, Literal* origLit, Literal* lit, Term* t);
+  void performStructInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* t, Inference::Rule rule);
+  void performStructInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* t, Inference::Rule rule);
+  void performStructInductionThree(Clause* premise, Literal* origLit, Literal* lit, Term* t, Inference::Rule rule);
 
   bool notDone(Literal* lit, Term* t);
   Term* getPlaceholderForTerm(Term* t);

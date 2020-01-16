@@ -82,7 +82,7 @@ TermList LiteralSubsetReplacement::transformSubterm(TermList trm)
   return trm;
 }
 
-Literal* LiteralSubsetReplacement::transformSubset() {
+Literal* LiteralSubsetReplacement::transformSubset(Inference::Rule& rule) {
   CALL("LiteralSubsetReplacement::transformSubset");
   // Increment _iteration, since it either is 0, or was already used.
   _iteration++;
@@ -98,6 +98,11 @@ Literal* LiteralSubsetReplacement::transformSubset() {
       ((_occurrences > _maxOccurrences) && (_iteration > 1))) {
     // All combinations were already returned.
     return nullptr;
+  }
+  if (setBits == _occurrences) {
+    rule = Inference::INDUCTION;
+  } else {
+    rule = Inference::GEN_INDUCTION;
   }
   _matchCount = 0;
   return transform(_lit);
@@ -194,18 +199,19 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
         static bool two = env.options->mathInduction() == Options::MathInductionKind::TWO ||
                           env.options->mathInduction() == Options::MathInductionKind::ALL;
         if(notDone(lit,t)){
+          Inference::Rule rule = Inference::INDUCTION;
           Term* inductionTerm = useTermSubset ? getPlaceholderForTerm(t) : t;
           Kernel::LiteralSubsetReplacement subsetReplacement(lit, t, TermList(inductionTerm));
-          Literal* ilit = useTermSubset ? subsetReplacement.transformSubset() : lit;
+          Literal* ilit = useTermSubset ? subsetReplacement.transformSubset(rule) : lit;
           ASS(ilit != nullptr);
           do {
             if(one){
-              performMathInductionOne(premise,lit,ilit,inductionTerm);
+              performMathInductionOne(premise,lit,ilit,inductionTerm,rule);
             }
             if(two){
-              performMathInductionTwo(premise,lit,ilit,inductionTerm);
+              performMathInductionTwo(premise,lit,ilit,inductionTerm,rule);
             }
-          } while (useTermSubset && (ilit = subsetReplacement.transformSubset()));
+          } while (useTermSubset && (ilit = subsetReplacement.transformSubset(rule)));
         }
       }
       Set<Term*>::Iterator citer2(ta_terms);
@@ -219,21 +225,22 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
         static bool three = env.options->structInduction() == Options::StructuralInductionKind::THREE ||
                           env.options->structInduction() == Options::StructuralInductionKind::ALL;
         if(notDone(lit,t)){
+          Inference::Rule rule = Inference::INDUCTION;
           Term* inductionTerm = useTermSubset ? getPlaceholderForTerm(t) : t;
           Kernel::LiteralSubsetReplacement subsetReplacement(lit, t, TermList(inductionTerm));
-          Literal* ilit = useTermSubset ? subsetReplacement.transformSubset() : lit;
+          Literal* ilit = useTermSubset ? subsetReplacement.transformSubset(rule) : lit;
           ASS(ilit != nullptr);
           do {
             if(one){
-              performStructInductionOne(premise,lit,ilit,inductionTerm);
+              performStructInductionOne(premise,lit,ilit,inductionTerm,rule);
             }
             if(two){
-              performStructInductionTwo(premise,lit,ilit,inductionTerm);
+              performStructInductionTwo(premise,lit,ilit,inductionTerm,rule);
             }
             if(three){
-              performStructInductionThree(premise,lit,ilit,inductionTerm);
+              performStructInductionThree(premise,lit,ilit,inductionTerm,rule);
             }
-          } while (useTermSubset && (ilit = subsetReplacement.transformSubset()));
+          } while (useTermSubset && (ilit = subsetReplacement.transformSubset(rule)));
         }
       } 
    }
@@ -243,100 +250,103 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
       // (L[0] & (![X] : (X>=0 & L[X]) -> L[x+1])) -> (![Y] : Y>=0 -> L[Y])
       // (L[0] & (![X] : (X<=0 & L[X]) -> L[x-1])) -> (![Y] : Y<=0 -> L[Y])
       // for some ~L[a]
-void InductionClauseIterator::performMathInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* term) 
+void InductionClauseIterator::performMathInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule) 
 {
   CALL("InductionClauseIterator::performMathInductionOne");
 
-        //cout << "PERFORM INDUCTION on " << env.signature->functionName(c) << endl;
+  //cout << "PERFORM INDUCTION on " << env.signature->functionName(c) << endl;
+        
+  TermList zero(theory->representConstant(IntegerConstantType(0)));
+  TermList one(theory->representConstant(IntegerConstantType(1)));
+  TermList mone(theory->representConstant(IntegerConstantType(-1)));
 
-        TermList zero(theory->representConstant(IntegerConstantType(0)));
-        TermList one(theory->representConstant(IntegerConstantType(1)));
-        TermList mone(theory->representConstant(IntegerConstantType(-1)));
+  TermList x(0,false);
+  TermList y(1,false);
 
-        TermList x(0,false);
-        TermList y(1,false);
+  Literal* clit = Literal::complementaryLiteral(lit);
 
-        Literal* clit = Literal::complementaryLiteral(lit);
+  // create L[zero]
+  TermReplacement cr1(term,zero);
+  Formula* Lzero = new AtomicFormula(cr1.transform(clit));
 
-        // create L[zero]
-        TermReplacement cr1(term,zero);
-        Formula* Lzero = new AtomicFormula(cr1.transform(clit));
+  // create L[X] 
+  TermReplacement cr2(term,x);
+  Formula* Lx = new AtomicFormula(cr2.transform(clit));
 
-        // create L[X] 
-        TermReplacement cr2(term,x);
-        Formula* Lx = new AtomicFormula(cr2.transform(clit));
+  // create L[Y] 
+  TermReplacement cr3(term,y);
+  Formula* Ly = new AtomicFormula(cr3.transform(clit));
 
-        // create L[Y] 
-        TermReplacement cr3(term,y);
-        Formula* Ly = new AtomicFormula(cr3.transform(clit));
+  // create L[X+1] 
+  TermList fpo(Term::create2(env.signature->getInterpretingSymbol(Theory::INT_PLUS),x,one));
+  TermReplacement cr4(term,fpo);
+  Formula* Lxpo = new AtomicFormula(cr4.transform(clit));
 
-        // create L[X+1] 
-        TermList fpo(Term::create2(env.signature->getInterpretingSymbol(Theory::INT_PLUS),x,one));
-        TermReplacement cr4(term,fpo);
-        Formula* Lxpo = new AtomicFormula(cr4.transform(clit));
+  // create L[X-1]
+  TermList fmo(Term::create2(env.signature->getInterpretingSymbol(Theory::INT_PLUS),x,mone));
+  TermReplacement cr5(term,fmo);
+  Formula* Lxmo = new AtomicFormula(cr5.transform(clit));
 
-        // create L[X-1]
-        TermList fmo(Term::create2(env.signature->getInterpretingSymbol(Theory::INT_PLUS),x,mone));
-        TermReplacement cr5(term,fmo);
-        Formula* Lxmo = new AtomicFormula(cr5.transform(clit));
-
-        // create X>=0, which is ~X<0
-        Formula* Lxgz = new AtomicFormula(Literal::create2(env.signature->getInterpretingSymbol(Theory::INT_LESS),
-                                         false,x,zero));
-        // create Y>=0, which is ~Y<0
-        Formula* Lygz = new AtomicFormula(Literal::create2(env.signature->getInterpretingSymbol(Theory::INT_LESS),
-                                         false,y,zero));
-        // create X<=0, which is ~0<X
-        Formula* Lxlz = new AtomicFormula(Literal::create2(env.signature->getInterpretingSymbol(Theory::INT_LESS),
-                                         false,zero,x));
-        // create Y<=0, which is ~0<Y
-        Formula* Lylz = new AtomicFormula(Literal::create2(env.signature->getInterpretingSymbol(Theory::INT_LESS),
-                                         false,zero,y));
+  // create X>=0, which is ~X<0
+  Formula* Lxgz = new AtomicFormula(Literal::create2(env.signature->getInterpretingSymbol(Theory::INT_LESS),
+                                   false,x,zero));
+  // create Y>=0, which is ~Y<0
+  Formula* Lygz = new AtomicFormula(Literal::create2(env.signature->getInterpretingSymbol(Theory::INT_LESS),
+                                   false,y,zero));
+  // create X<=0, which is ~0<X
+  Formula* Lxlz = new AtomicFormula(Literal::create2(env.signature->getInterpretingSymbol(Theory::INT_LESS),
+                                   false,zero,x));
+  // create Y<=0, which is ~0<Y
+  Formula* Lylz = new AtomicFormula(Literal::create2(env.signature->getInterpretingSymbol(Theory::INT_LESS),
+                                   false,zero,y));
 
 
-        // (L[0] & (![X] : (X>=0 & L[X]) -> L[x+1])) -> (![Y] : Y>=0 -> L[Y])
+  // (L[0] & (![X] : (X>=0 & L[X]) -> L[x+1])) -> (![Y] : Y>=0 -> L[Y])
 
-        Formula* hyp1 = new BinaryFormula(Connective::IMP,
-                          new JunctionFormula(Connective::AND,new FormulaList(Lzero,new FormulaList(
-                            Formula::quantify(new BinaryFormula(Connective::IMP,
-                              new JunctionFormula(Connective::AND, new FormulaList(Lxgz,new FormulaList(Lx,0))),
-                              Lxpo)) 
-                          ,0))),
-                          Formula::quantify(new BinaryFormula(Connective::IMP,Lygz,Ly)));
+  Formula* hyp1 = new BinaryFormula(Connective::IMP,
+                    new JunctionFormula(Connective::AND,new FormulaList(Lzero,new FormulaList(
+                      Formula::quantify(new BinaryFormula(Connective::IMP,
+                        new JunctionFormula(Connective::AND, new FormulaList(Lxgz,new FormulaList(Lx,0))),
+                        Lxpo)) 
+                    ,0))),
+                    Formula::quantify(new BinaryFormula(Connective::IMP,Lygz,Ly)));
 
-        // (L[0] & (![X] : (X<=0 & L[X]) -> L[x-1])) -> (![Y] : Y<=0 -> L[Y])
+  // (L[0] & (![X] : (X<=0 & L[X]) -> L[x-1])) -> (![Y] : Y<=0 -> L[Y])
 
-        Formula* hyp2 = new BinaryFormula(Connective::IMP,
-                          new JunctionFormula(Connective::AND,new FormulaList(Lzero,new FormulaList(
-                            Formula::quantify(new BinaryFormula(Connective::IMP,
-                              new JunctionFormula(Connective::AND, new FormulaList(Lxlz,new FormulaList(Lx,0))),
-                              Lxmo))
-                          ,0))),
-                          Formula::quantify(new BinaryFormula(Connective::IMP,Lylz,Ly)));
+  Formula* hyp2 = new BinaryFormula(Connective::IMP,
+                    new JunctionFormula(Connective::AND,new FormulaList(Lzero,new FormulaList(
+                      Formula::quantify(new BinaryFormula(Connective::IMP,
+                        new JunctionFormula(Connective::AND, new FormulaList(Lxlz,new FormulaList(Lx,0))),
+                        Lxmo))
+                    ,0))),
+                    Formula::quantify(new BinaryFormula(Connective::IMP,Lylz,Ly)));
   
-        NewCNF cnf(0);
-        cnf.setForInduction();
-        Stack<Clause*> hyp_clauses;
-        FormulaUnit* fu1 = new FormulaUnit(hyp1,new Inference(Inference::INDUCTION),Unit::AXIOM);
-        FormulaUnit* fu2 = new FormulaUnit(hyp2,new Inference(Inference::INDUCTION),Unit::AXIOM);
-        cnf.clausify(NNF::ennf(fu1), hyp_clauses);
-        cnf.clausify(NNF::ennf(fu2), hyp_clauses);
+  NewCNF cnf(0);
+  cnf.setForInduction();
+  Stack<Clause*> hyp_clauses;
+  FormulaUnit* fu1 = new FormulaUnit(hyp1,new Inference(rule),Unit::AXIOM);
+  FormulaUnit* fu2 = new FormulaUnit(hyp2,new Inference(rule),Unit::AXIOM);
+  cnf.clausify(NNF::ennf(fu1), hyp_clauses);
+  cnf.clausify(NNF::ennf(fu2), hyp_clauses);
 
-        // Now perform resolution between origLit and the hyp_clauses on Ly, which should be contained in each clause!
-        Stack<Clause*>::Iterator cit(hyp_clauses);
-        while(cit.hasNext()){
-          Clause* c = cit.next();
-          //TODO destroy this?
-          RobSubstitution* subst = new RobSubstitution();
-          subst->unify(TermList(origLit),0,TermList(Ly->literal()),1);
-          SLQueryResult qr(origLit,premise,ResultSubstitution::fromSubstitution(subst,1,0));
-          Clause* r = BinaryResolution::generateClause(c,Ly->literal(),qr,*env.options);
-          _clauses.push(r);
-        }
-        env.statistics->induction++;
- }
+  // Now perform resolution between origLit and the hyp_clauses on Ly, which should be contained in each clause!
+  Stack<Clause*>::Iterator cit(hyp_clauses);
+  while(cit.hasNext()){
+    Clause* c = cit.next();
+    //TODO destroy this?
+    RobSubstitution* subst = new RobSubstitution();
+    subst->unify(TermList(origLit),0,TermList(Ly->literal()),1);
+    SLQueryResult qr(origLit,premise,ResultSubstitution::fromSubstitution(subst,1,0));
+    Clause* r = BinaryResolution::generateClause(c,Ly->literal(),qr,*env.options);
+    _clauses.push(r);
+  }
+  env.statistics->induction++;
+  if (rule == Inference::GEN_INDUCTION) {
+    env.statistics->generalizedInduction++;
+  }
+}
 
-void InductionClauseIterator::performMathInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* term) 
+void InductionClauseIterator::performMathInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule) 
 {
   CALL("InductionClauseIterator::performMathInductionTwo");
 
@@ -350,7 +360,7 @@ void InductionClauseIterator::performMathInductionTwo(Clause* premise, Literal* 
  * and then force binary resolution on L for each resultant clause
  */
 
-void InductionClauseIterator::performStructInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* term)
+void InductionClauseIterator::performStructInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule)
 {
   CALL("InductionClauseIterator::performStructInductionOne"); 
 
@@ -429,7 +439,7 @@ void InductionClauseIterator::performStructInductionOne(Clause* premise, Literal
   NewCNF cnf(0);
   cnf.setForInduction();
   Stack<Clause*> hyp_clauses;
-  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(Inference::INDUCTION),Unit::AXIOM);
+  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(rule),Unit::AXIOM);
   cnf.clausify(NNF::ennf(fu), hyp_clauses);
 
   //cout << "Clausify " << fu->toString() << endl;
@@ -444,6 +454,9 @@ void InductionClauseIterator::performStructInductionOne(Clause* premise, Literal
     _clauses.push(r);
   }
   env.statistics->induction++;
+  if (rule == Inference::GEN_INDUCTION) {
+    env.statistics->generalizedInduction++;
+  }
 }
 
 /**
@@ -451,10 +464,10 @@ void InductionClauseIterator::performStructInductionOne(Clause* premise, Literal
  * We produce the clause ~L[x] \/ ?y : L[y] & !z (z subterm y -> ~L[z])
  * and perform resolution with lit L[c]
  */
-void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* term) 
+void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule) 
 {
   //cout << "TWO " << premise->toString() << endl;
-
+        
   TermAlgebra* ta = env.signature->getTermAlgebraOfSort(env.signature->getFunction(term->functor())->fnType()->result());
   unsigned ta_sort = ta->sort();
 
@@ -533,7 +546,7 @@ void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal
   NewCNF cnf(0);
   cnf.setForInduction();
   Stack<Clause*> hyp_clauses;
-  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(Inference::INDUCTION),Unit::AXIOM);
+  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(rule),Unit::AXIOM);
   cnf.clausify(NNF::ennf(fu), hyp_clauses);
 
   //cout << "Clausify " << fu->toString() << endl;
@@ -548,7 +561,9 @@ void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal
     _clauses.push(r);
   }
   env.statistics->induction++;  
-
+  if (rule == Inference::GEN_INDUCTION) {
+    env.statistics->generalizedInduction++;
+  }
 }
 
 /*
@@ -561,11 +576,10 @@ void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal
  * i.e. we add a new special predicat that is true when its argument is smaller than Y
  *
  */
-void InductionClauseIterator::performStructInductionThree(Clause* premise, Literal* origLit, Literal* lit, Term* term) 
+void InductionClauseIterator::performStructInductionThree(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule) 
 {
   CALL("InductionClauseIterator::performStructInductionThree");
-
-
+        
   TermAlgebra* ta = env.signature->getTermAlgebraOfSort(env.signature->getFunction(term->functor())->fnType()->result());
   unsigned ta_sort = ta->sort();
 
@@ -677,7 +691,7 @@ void InductionClauseIterator::performStructInductionThree(Clause* premise, Liter
   NewCNF cnf(0);
   cnf.setForInduction();
   Stack<Clause*> hyp_clauses;
-  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(Inference::INDUCTION),Unit::AXIOM);
+  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(rule),Unit::AXIOM);
   cnf.clausify(NNF::ennf(fu), hyp_clauses);
 
   //cout << "Clausify " << fu->toString() << endl;
@@ -692,6 +706,9 @@ void InductionClauseIterator::performStructInductionThree(Clause* premise, Liter
     _clauses.push(r);
   }
   env.statistics->induction++; 
+  if (rule == Inference::GEN_INDUCTION) {
+    env.statistics->generalizedInduction++;
+  }
 }
 
 bool InductionClauseIterator::notDone(Literal* lit, Term* term)

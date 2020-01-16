@@ -473,6 +473,8 @@ vstring Inference::ruleName(Rule rule)
     return "induction hypothesis";
   case INDUCTIVE_STRENGTH:
     return "inductive strengthening";
+  case GEN_INDUCTION:
+    return "generalized induction hypothesis";
   default:
     ASSERTION_VIOLATION;
     return "!UNKNOWN INFERENCE RULE!";
