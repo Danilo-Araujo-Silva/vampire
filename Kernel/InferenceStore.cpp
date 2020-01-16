@@ -323,8 +323,11 @@ protected:
     Inference::Rule rule;
     UnitIterator parents=_is->getParents(cs, rule);
 
-    if(rule == Inference::INDUCTION){
+    if((rule == Inference::INDUCTION) || (rule == Inference::GEN_INDUCTION)){
       env.statistics->inductionInProof++;
+      if (rule == Inference::GEN_INDUCTION) {
+        env.statistics->generalizedInductionInProof++;
+      }
     }
 
     if (cs->isClause()) {

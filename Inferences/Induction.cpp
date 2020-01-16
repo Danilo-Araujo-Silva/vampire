@@ -82,7 +82,7 @@ TermList LiteralSubsetReplacement::transformSubterm(TermList trm)
   return trm;
 }
 
-Literal* LiteralSubsetReplacement::transformSubset() {
+Literal* LiteralSubsetReplacement::transformSubset(Inference::Rule& rule) {
   CALL("LiteralSubsetReplacement::transformSubset");
   // Increment _iteration, since it either is 0, or was already used.
   _iteration++;
@@ -99,6 +99,11 @@ Literal* LiteralSubsetReplacement::transformSubset() {
       ((_occurrences > _maxOccurrences) && (_iteration > 1))) {
     // All combinations were already returned.
     return nullptr;
+  }
+  if (setBits == _occurrences) {
+    rule = Inference::INDUCTION;
+  } else {
+    rule = Inference::GEN_INDUCTION;
   }
   _matchCount = 0;
   return transform(_lit);
@@ -195,18 +200,19 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
         static bool two = env.options->mathInduction() == Options::MathInductionKind::TWO ||
                           env.options->mathInduction() == Options::MathInductionKind::ALL;
         if(notDone(lit,t)){
+          Inference::Rule rule = Inference::INDUCTION;
           Term* inductionTerm = generalize ? getPlaceholderForTerm(t) : t;
           Kernel::LiteralSubsetReplacement subsetReplacement(lit, t, TermList(inductionTerm));
-          Literal* ilit = generalize ? subsetReplacement.transformSubset() : lit;
+          Literal* ilit = generalize ? subsetReplacement.transformSubset(rule) : lit;
           ASS(ilit != nullptr);
           do {
             if(one){
-              performMathInductionOne(premise,lit,ilit,inductionTerm);
+              performMathInductionOne(premise,lit,ilit,inductionTerm,rule);
             }
             if(two){
-              performMathInductionTwo(premise,lit,ilit,inductionTerm);
+              performMathInductionTwo(premise,lit,ilit,inductionTerm,rule);
             }
-          } while (generalize && (ilit = subsetReplacement.transformSubset()));
+          } while (generalize && (ilit = subsetReplacement.transformSubset(rule)));
         }
       }
       Set<Term*>::Iterator citer2(ta_terms);
@@ -220,21 +226,22 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
         static bool three = env.options->structInduction() == Options::StructuralInductionKind::THREE ||
                           env.options->structInduction() == Options::StructuralInductionKind::ALL;
         if(notDone(lit,t)){
+          Inference::Rule rule = Inference::INDUCTION;
           Term* inductionTerm = generalize ? getPlaceholderForTerm(t) : t;
           Kernel::LiteralSubsetReplacement subsetReplacement(lit, t, TermList(inductionTerm));
-          Literal* ilit = generalize ? subsetReplacement.transformSubset() : lit;
+          Literal* ilit = generalize ? subsetReplacement.transformSubset(rule) : lit;
           ASS(ilit != nullptr);
           do {
             if(one){
-              performStructInductionOne(premise,lit,ilit,inductionTerm);
+              performStructInductionOne(premise,lit,ilit,inductionTerm,rule);
             }
             if(two){
-              performStructInductionTwo(premise,lit,ilit,inductionTerm);
+              performStructInductionTwo(premise,lit,ilit,inductionTerm,rule);
             }
             if(three){
-              performStructInductionThree(premise,lit,ilit,inductionTerm);
+              performStructInductionThree(premise,lit,ilit,inductionTerm,rule);
             }
-          } while (generalize && (ilit = subsetReplacement.transformSubset()));
+          } while (generalize && (ilit = subsetReplacement.transformSubset(rule)));
         }
       } 
    }
@@ -244,7 +251,7 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
 // (L[0] & (![X] : (X>=0 & L[X]) -> L[x+1])) -> (![Y] : Y>=0 -> L[Y])
 // (L[0] & (![X] : (X<=0 & L[X]) -> L[x-1])) -> (![Y] : Y<=0 -> L[Y])
 // for some ~L[a]
-void InductionClauseIterator::performMathInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* term) 
+void InductionClauseIterator::performMathInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule) 
 {
   CALL("InductionClauseIterator::performMathInductionOne");
 
@@ -318,8 +325,8 @@ void InductionClauseIterator::performMathInductionOne(Clause* premise, Literal* 
   NewCNF cnf(0);
   cnf.setForInduction();
   Stack<Clause*> hyp_clauses;
-  FormulaUnit* fu1 = new FormulaUnit(hyp1,new Inference(Inference::INDUCTION),Unit::AXIOM);
-  FormulaUnit* fu2 = new FormulaUnit(hyp2,new Inference(Inference::INDUCTION),Unit::AXIOM);
+  FormulaUnit* fu1 = new FormulaUnit(hyp1,new Inference(rule),Unit::AXIOM);
+  FormulaUnit* fu2 = new FormulaUnit(hyp2,new Inference(rule),Unit::AXIOM);
   cnf.clausify(NNF::ennf(fu1), hyp_clauses);
   cnf.clausify(NNF::ennf(fu2), hyp_clauses);
 
@@ -335,9 +342,12 @@ void InductionClauseIterator::performMathInductionOne(Clause* premise, Literal* 
     _clauses.push(r);
   }
   env.statistics->induction++;
+  if (rule == Inference::GEN_INDUCTION) {
+    env.statistics->generalizedInduction++;
+  }
 }
 
-void InductionClauseIterator::performMathInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* term) 
+void InductionClauseIterator::performMathInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule) 
 {
   CALL("InductionClauseIterator::performMathInductionTwo");
 
@@ -351,7 +361,7 @@ void InductionClauseIterator::performMathInductionTwo(Clause* premise, Literal* 
  * and then force binary resolution on L for each resultant clause
  */
 
-void InductionClauseIterator::performStructInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* term)
+void InductionClauseIterator::performStructInductionOne(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule)
 {
   CALL("InductionClauseIterator::performStructInductionOne"); 
 
@@ -433,7 +443,7 @@ void InductionClauseIterator::performStructInductionOne(Clause* premise, Literal
   NewCNF cnf(0);
   cnf.setForInduction();
   Stack<Clause*> hyp_clauses;
-  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(Inference::INDUCTION),Unit::AXIOM);
+  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(rule),Unit::AXIOM);
   cnf.clausify(NNF::ennf(fu), hyp_clauses);
 
   //cout << "Clausify " << fu->toString() << endl;
@@ -448,6 +458,9 @@ void InductionClauseIterator::performStructInductionOne(Clause* premise, Literal
     _clauses.push(r);
   }
   env.statistics->induction++;
+  if (rule == Inference::GEN_INDUCTION) {
+    env.statistics->generalizedInduction++;
+  }
 }
 
 /**
@@ -455,10 +468,10 @@ void InductionClauseIterator::performStructInductionOne(Clause* premise, Literal
  * We produce the clause ~L[x] \/ ?y : L[y] & !z (z subterm y -> ~L[z])
  * and perform resolution with lit L[c]
  */
-void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* term) 
+void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule) 
 {
   //cout << "TWO " << premise->toString() << endl;
-
+        
   TermAlgebra* ta = env.signature->getTermAlgebraOfSort(env.signature->getFunction(term->functor())->fnType()->result());
   unsigned ta_sort = ta->sort();
 
@@ -539,7 +552,7 @@ void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal
   NewCNF cnf(0);
   cnf.setForInduction();
   Stack<Clause*> hyp_clauses;
-  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(Inference::INDUCTION),Unit::AXIOM);
+  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(rule),Unit::AXIOM);
   cnf.clausify(NNF::ennf(fu), hyp_clauses);
 
   //cout << "Clausify " << fu->toString() << endl;
@@ -554,7 +567,9 @@ void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal
     _clauses.push(r);
   }
   env.statistics->induction++;  
-
+  if (rule == Inference::GEN_INDUCTION) {
+    env.statistics->generalizedInduction++;
+  }
 }
 
 /*
@@ -567,11 +582,10 @@ void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal
  * i.e. we add a new special predicat that is true when its argument is smaller than Y
  *
  */
-void InductionClauseIterator::performStructInductionThree(Clause* premise, Literal* origLit, Literal* lit, Term* term) 
+void InductionClauseIterator::performStructInductionThree(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule) 
 {
   CALL("InductionClauseIterator::performStructInductionThree");
-
-
+        
   TermAlgebra* ta = env.signature->getTermAlgebraOfSort(env.signature->getFunction(term->functor())->fnType()->result());
   unsigned ta_sort = ta->sort();
 
@@ -683,7 +697,7 @@ void InductionClauseIterator::performStructInductionThree(Clause* premise, Liter
   NewCNF cnf(0);
   cnf.setForInduction();
   Stack<Clause*> hyp_clauses;
-  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(Inference::INDUCTION),Unit::AXIOM);
+  FormulaUnit* fu = new FormulaUnit(hypothesis,new Inference(rule),Unit::AXIOM);
   cnf.clausify(NNF::ennf(fu), hyp_clauses);
 
   //cout << "Clausify " << fu->toString() << endl;
@@ -698,6 +712,9 @@ void InductionClauseIterator::performStructInductionThree(Clause* premise, Liter
     _clauses.push(r);
   }
   env.statistics->induction++; 
+  if (rule == Inference::GEN_INDUCTION) {
+    env.statistics->generalizedInduction++;
+  }
 }
 
 bool InductionClauseIterator::notDone(Literal* lit, Term* term)
