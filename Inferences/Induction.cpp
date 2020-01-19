@@ -164,7 +164,7 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
       Set<Term*> ta_terms;
       Set<Term*> int_terms;
       SubtermIterator it(lit);
-      it.next(); // to move past the lit symbol
+      //it.next(); // to move past the lit symbol
       while(it.hasNext()){
         TermList ts = it.next();
         if(!ts.term()){ continue; }
@@ -714,6 +714,13 @@ void InductionClauseIterator::performStructInductionThree(Clause* premise, Liter
 bool InductionClauseIterator::notDone(Literal* lit, Term* term)
 {
   CALL("InductionClauseIterator::notDone");
+
+  vstring termName = term->toString();
+  if (termName.length() > 2 && termName[0] == 's' && termName[1] == 'K') {
+    string tn;
+    for (int i = 2; i < termName.length(); ++i) tn += termName[i];
+    if (std::stoi(tn) >= env.skolems) return false;
+  }
 
   static DHSet<Literal*> done;
   static DHMap<unsigned,TermList> blanks; 

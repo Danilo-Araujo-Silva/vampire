@@ -521,6 +521,8 @@ class Signature
 
   static bool symbolNeedsQuoting(vstring name, bool interpreted, unsigned arity);
 
+  unsigned getSkolemFunctionCount() { return _skolemFunctionCount; }
+
 private:
   Stack<TermList> _dividesNvalues;
 

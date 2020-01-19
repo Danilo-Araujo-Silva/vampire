@@ -446,6 +446,8 @@ void Preprocess::preprocess(Problem& prb)
      UIHelper::outputAllPremises(cerr, prb.units());
    }
 
+   env.skolems = env.signature->getSkolemFunctionCount();
+
    if (env.options->showPreprocessing()) {
      env.out() << "preprocessing finished" << std::endl;
      env.endOutput();

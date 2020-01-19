@@ -102,6 +102,8 @@ public:
   /** set to true when there are some interpreted operations */
   bool interpretedOperationsUsed;
 
+  unsigned skolems = 0;
+
 private:
   int _outputDepth;
   /** if non-zero, all output will go here */
