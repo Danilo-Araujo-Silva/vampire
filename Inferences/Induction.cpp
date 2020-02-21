@@ -164,7 +164,7 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
         TermList ts = it.next();
         if(!ts.term()){ continue; }
         unsigned f = ts.term()->functor(); 
-        if(env.signature->functionArity(f)==0 &&
+        if(//env.signature->functionArity(f)==0 &&
            (
                all
             || env.signature->getFunction(f)->inGoal()
@@ -173,7 +173,7 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
         ){
          if(structInd && 
             env.signature->isTermAlgebraSort(env.signature->getFunction(f)->fnType()->result()) &&
-            !env.signature->getFunction(f)->termAlgebraCons()
+            !(env.signature->functionArity(f) == 0 && env.signature->getFunction(f)->termAlgebraCons()) // base constructor
            ){
             ta_terms.insert(ts.term());
           }
