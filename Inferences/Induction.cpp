@@ -150,6 +150,7 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
   static bool mathInd = env.options->induction() == Options::Induction::BOTH ||
                          env.options->induction() == Options::Induction::MATHEMATICAL;
   static bool generalize = env.options->inductionGen();
+  static bool complexTermsAllowed = env.options->inductionOnComplexTerms();
 
   if((!negOnly || lit->isNegative() || 
          (theory->isInterpretedPredicate(lit) && theory->isInequality(theory->interpretPredicate(lit)))
@@ -164,7 +165,7 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
         TermList ts = it.next();
         if(!ts.term()){ continue; }
         unsigned f = ts.term()->functor(); 
-        if(//env.signature->functionArity(f)==0 &&
+        if((complexTermsAllowed || env.signature->functionArity(f)==0) &&
            (
                all
             || env.signature->getFunction(f)->inGoal()
@@ -173,7 +174,7 @@ void InductionClauseIterator::process(Clause* premise, Literal* lit)
         ){
          if(structInd && 
             env.signature->isTermAlgebraSort(env.signature->getFunction(f)->fnType()->result()) &&
-            !(env.signature->functionArity(f) == 0 && env.signature->getFunction(f)->termAlgebraCons()) // base constructor
+            ((complexTermsAllowed && env.signature->functionArity(f) != 0) || !env.signature->getFunction(f)->termAlgebraCons()) // skip base constructors
            ){
             ta_terms.insert(ts.term());
           }
