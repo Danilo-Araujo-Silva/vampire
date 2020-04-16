@@ -470,8 +470,8 @@ void InductionClauseIterator::performStructInductionOne(Clause* premise, Literal
  */
 void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule) 
 {
-  //cout << "TWO " << premise->toString() << endl;
-        
+  CALL("InductionClauseIterator::performStructInductionTwo"); 
+
   TermAlgebra* ta = env.signature->getTermAlgebraOfSort(env.signature->getFunction(term->functor())->fnType()->result());
   unsigned ta_sort = ta->sort();
 
@@ -585,7 +585,7 @@ void InductionClauseIterator::performStructInductionTwo(Clause* premise, Literal
 void InductionClauseIterator::performStructInductionThree(Clause* premise, Literal* origLit, Literal* lit, Term* term, Inference::Rule rule) 
 {
   CALL("InductionClauseIterator::performStructInductionThree");
-        
+
   TermAlgebra* ta = env.signature->getTermAlgebraOfSort(env.signature->getFunction(term->functor())->fnType()->result());
   unsigned ta_sort = ta->sort();
 

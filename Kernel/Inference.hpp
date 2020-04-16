@@ -315,7 +315,7 @@ public:
     INDUCTION,
     /* Inductive strengthening*/
     INDUCTIVE_STRENGTH,
-    /* Generalized induction */
+    /* Generalized induction hypothesis */
     GEN_INDUCTION
   }; // class Inference::Rule
 
