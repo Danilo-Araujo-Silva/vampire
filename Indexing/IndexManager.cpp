@@ -83,7 +83,7 @@ Index* IndexManager::request(IndexType t)
   CALL("IndexManager::request");
 
   // optimization:
-  // if the simplifyingContainer and the toBeSimplifiedContainer are the same (which is the case for Discount, Otter, and LRS),
+  // if the simplifyingContainer and the toBeSimplifiedContainer are the same (which is the case for Discount, Otter, and LRS, but not for Discott),
   // we don't need to use (and therefore maintain) separate copies of indices.
   // Note that we currently only use SIMPLIFICATION_SUBST_TREE for both of these containers.
   if(t == BW_SIMPLIFICATION_SUBST_TREE && _equalSimpContainers)
