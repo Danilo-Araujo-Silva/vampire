@@ -527,7 +527,8 @@ public:
      INST_GEN = 2,
      LRS = 3,
      OTTER = 4,
-     Z3 = 5,
+     DISCOTT = 5,
+     Z3 = 6,
    };
 
   /** Possible values for activity of some inference rules */

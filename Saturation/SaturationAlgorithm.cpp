@@ -1395,6 +1395,9 @@ SaturationAlgorithm* SaturationAlgorithm::createFromOptions(Problem& prb, const 
   case Shell::Options::SaturationAlgorithm::OTTER:
     res=new Otter(prb, opt);
     break;
+  case Shell::Options::SaturationAlgorithm::DISCOTT:
+    res=new Discott(prb, opt);
+    break;
   default:
     NOT_IMPLEMENTED;
   }

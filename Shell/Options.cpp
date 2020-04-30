@@ -746,7 +746,7 @@ void Options::Options::init()
 //*********************** Saturation  ***********************
 
     _saturationAlgorithm = ChoiceOptionValue<SaturationAlgorithm>("saturation_algorithm","sa",SaturationAlgorithm::LRS,
-                                                                  {"discount","fmb","inst_gen","lrs","otter"
+                                                                  {"discount","fmb","inst_gen","lrs","otter","discott"
 #if VZ3
       ,"z3"
 #endif
@@ -756,6 +756,7 @@ void Options::Options::init()
     " - discount:\n"
     " - otter:\n"
     " - limited resource:\n"
+    " - discott:\n"
     " - instance generation: a simple implementation of instantiation calculus\n"
     "    (global_subsumption, unit_resulting_resolution and age_weight_ratio)\n"
     " - fmb : finite model building for satisfiable problems.\n"
@@ -1722,7 +1723,7 @@ void Options::Options::init()
     {"minisat","vampire"});
 #endif
     _satSolver.description=
-    "Select the SAT solver to be used throughout the solver. This will be used in AVATAR (for splitting) when the saturation algorithm is discount,lrs or otter and in instance generation for selection and global subsumption.";
+    "Select the SAT solver to be used throughout the solver. This will be used in AVATAR (for splitting) when the saturation algorithm is discount, lrs, otter or discott, and in instance generation for selection and global subsumption.";
     _lookup.insert(&_satSolver);
     _satSolver.tag(OptionTag::SAT);
     _satSolver.setRandomChoices(
@@ -2935,6 +2936,9 @@ void Options::readFromEncodedOptions (vstring testId)
   else if (ma == "ott") {
     _saturationAlgorithm.actualValue = SaturationAlgorithm::OTTER;
   }
+  else if (ma == "dot") {
+    _saturationAlgorithm.actualValue = SaturationAlgorithm::DISCOTT;
+  }
   else if (ma == "ins") {
     _saturationAlgorithm.actualValue = SaturationAlgorithm::INST_GEN;
   }
@@ -3010,6 +3014,7 @@ vstring Options::generateEncodedOptions() const
     case SaturationAlgorithm::LRS : sat="lrs"; break;
     case SaturationAlgorithm::DISCOUNT : sat="dis"; break;
     case SaturationAlgorithm::OTTER : sat="ott"; break;
+    case SaturationAlgorithm::DISCOTT : sat="dot"; break;
     case SaturationAlgorithm::INST_GEN : sat="ins"; break;
     case SaturationAlgorithm::FINITE_MODEL_BUILDING : sat="fmb"; break;
     default : ASSERTION_VIOLATION;
