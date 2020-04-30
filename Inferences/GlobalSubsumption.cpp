@@ -66,7 +66,7 @@ void GlobalSubsumption::attach(SaturationAlgorithm* salg)
 
   ForwardSimplificationEngine::attach(salg);
   _index=static_cast<GroundingIndex*>(
-	  _salg->getIndexManager()->request(GLOBAL_SUBSUMPTION_INDEX) );
+	  _salg->getIndexManager()->request(FW_GLOBAL_SUBSUMPTION_INDEX) );
 
   if (_salg->getOptions().globalSubsumptionAvatarAssumptions() == Options::GlobalSubsumptionAvatarAssumptions::FULL_MODEL) {
     _splitter=_salg->getSplitter();
@@ -80,7 +80,7 @@ void GlobalSubsumption::detach()
   CALL("GlobalSubsumption::detach");
 
   _index=0;
-  _salg->getIndexManager()->release(GLOBAL_SUBSUMPTION_INDEX);
+  _salg->getIndexManager()->release(FW_GLOBAL_SUBSUMPTION_INDEX);
   ForwardSimplificationEngine::detach();
 }
 

@@ -168,7 +168,7 @@ void IGAlgorithm::init()
   if(_opt.instGenWithResolution()) {
     _saturationIndexManager = new IndexManager(0);
     if(_opt.globalSubsumption()) {
-      _saturationIndexManager->provideIndex(GLOBAL_SUBSUMPTION_INDEX, _groundingIndex.ptr());
+      _saturationIndexManager->provideIndex(FW_GLOBAL_SUBSUMPTION_INDEX, _groundingIndex.ptr());
     }
 
     _saturationProblem = _prb.copy(true);

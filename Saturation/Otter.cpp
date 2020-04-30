@@ -42,11 +42,6 @@ Otter::Otter(Problem& prb, const Options& opt)
 {
 }
 
-ClauseContainer* Otter::getSimplifyingClauseContainer()
-{
-  return &_simplCont;
-}
-
 void Otter::onActiveRemoved(Clause* cl)
 {
   CALL("Otter::onActiveRemoved");

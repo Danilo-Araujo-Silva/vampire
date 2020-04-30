@@ -41,14 +41,14 @@ void ForwardLiteralRewriting::attach(SaturationAlgorithm* salg)
   CALL("ForwardLiteralRewriting::attach");
   ForwardSimplificationEngine::attach(salg);
   _index=static_cast<RewriteRuleIndex*>(
-	  _salg->getIndexManager()->request(REWRITE_RULE_SUBST_TREE) );
+	  _salg->getIndexManager()->request(FW_REWRITE_RULE_SUBST_TREE) );
 }
 
 void ForwardLiteralRewriting::detach()
 {
   CALL("ForwardLiteralRewriting::detach");
   _index=0;
-  _salg->getIndexManager()->release(REWRITE_RULE_SUBST_TREE);
+  _salg->getIndexManager()->release(FW_REWRITE_RULE_SUBST_TREE);
   ForwardSimplificationEngine::detach();
 }
 

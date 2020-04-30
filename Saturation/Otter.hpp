@@ -42,7 +42,8 @@ public:
 
   Otter(Problem& prb, const Options& opt);
 
-  virtual ClauseContainer* getSimplifyingClauseContainer() override;
+  virtual ClauseContainer* getSimplifyingClauseContainer() override { return &_simplCont; };
+  virtual ClauseContainer* getToBeSimplifiedClauseContainer() override { return &_simplCont; };
 
 protected:
 

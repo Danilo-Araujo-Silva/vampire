@@ -62,14 +62,14 @@ void BackwardDemodulation::attach(SaturationAlgorithm* salg)
   CALL("BackwardDemodulation::attach");
   BackwardSimplificationEngine::attach(salg);
   _index=static_cast<DemodulationSubtermIndex*>(
-	  _salg->getIndexManager()->request(DEMODULATION_SUBTERM_SUBST_TREE) );
+	  _salg->getIndexManager()->request(BW_DEMODULATION_SUBTERM_SUBST_TREE) );
 }
 
 void BackwardDemodulation::detach()
 {
   CALL("BackwardDemodulation::detach");
   _index=0;
-  _salg->getIndexManager()->release(DEMODULATION_SUBTERM_SUBST_TREE);
+  _salg->getIndexManager()->release(BW_DEMODULATION_SUBTERM_SUBST_TREE);
   BackwardSimplificationEngine::detach();
 }
 

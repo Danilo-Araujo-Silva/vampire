@@ -41,11 +41,12 @@
 using namespace Lib;
 using namespace Indexing;
 
-IndexManager::IndexManager(SaturationAlgorithm* alg) : _alg(alg), _genLitIndex(0)
+IndexManager::IndexManager(SaturationAlgorithm* alg) : _alg(alg), _genLitIndex(0), _equalSimpContainers(false)
 {
   CALL("IndexManager::IndexManager");
 
   if(alg) {
+    _equalSimpContainers = alg->getSimplifyingClauseContainer() == alg->getToBeSimplifiedClauseContainer();
     attach(alg);
   }
 }
@@ -66,6 +67,7 @@ void IndexManager::setSaturationAlgorithm(SaturationAlgorithm* alg)
   ASS(alg);
 
   _alg = alg;
+  _equalSimpContainers = alg->getSimplifyingClauseContainer() == alg->getToBeSimplifiedClauseContainer();
   attach(alg);
 }
 
@@ -79,6 +81,15 @@ void IndexManager::attach(SaturationAlgorithm* salg)
 Index* IndexManager::request(IndexType t)
 {
   CALL("IndexManager::request");
+
+  // optimization:
+  // if the simplifyingContainer and the toBeSimplifiedContainer are the same (which is the case for Discount, Otter, and LRS),
+  // we don't need to use (and therefore maintain) separate copies of indices.
+  // Note that we currently only use SIMPLIFICATION_SUBST_TREE for both of these containers.
+  if(t == BW_SIMPLIFICATION_SUBST_TREE && _equalSimpContainers)
+  {
+    t = FW_SIMPLIFICATION_SUBST_TREE;
+  }
 
   Entry e;
   if(_store.find(t,e)) {
@@ -94,6 +105,12 @@ Index* IndexManager::request(IndexType t)
 void IndexManager::release(IndexType t)
 {
   CALL("IndexManager::release");
+
+  // optimization, see IndexManager::request()
+  if(t == BW_SIMPLIFICATION_SUBST_TREE && _equalSimpContainers)
+  {
+    t = FW_SIMPLIFICATION_SUBST_TREE;
+  }
 
   Entry e=_store.get(t);
 
@@ -111,6 +128,14 @@ void IndexManager::release(IndexType t)
 
 bool IndexManager::contains(IndexType t)
 {
+  CALL("IndexManager::contains");
+
+  // optimization, see IndexManager::request()
+  if(t == BW_SIMPLIFICATION_SUBST_TREE && _equalSimpContainers)
+  {
+    t = FW_SIMPLIFICATION_SUBST_TREE;
+  }
+
   return _store.find(t);
 }
 
@@ -122,6 +147,14 @@ bool IndexManager::contains(IndexType t)
  */
 Index* IndexManager::get(IndexType t)
 {
+  CALL("IndexManager::get");
+
+  // optimization, see IndexManager::request()
+  if(t == BW_SIMPLIFICATION_SUBST_TREE && _equalSimpContainers)
+  {
+    t = FW_SIMPLIFICATION_SUBST_TREE;
+  }
+
   return _store.get(t).index;
 }
 
@@ -150,97 +183,96 @@ Index* IndexManager::create(IndexType t)
   LiteralIndexingStructure* is;
   TermIndexingStructure* tis;
 
-  bool isGenerating;
   static bool useConstraints = env.options->unificationWithAbstraction()!=Options::UnificationWithAbstraction::OFF;
   switch(t) {
   case GENERATING_SUBST_TREE:
     is=new LiteralSubstitutionTree(useConstraints);
     _genLitIndex=is;
     res=new GeneratingLiteralIndex(is);
-    isGenerating = true;
+    res->attachContainer(_alg->getGeneratingClauseContainer());
     break;
-  case SIMPLIFYING_SUBST_TREE:
+  case FW_SIMPLIFICATION_SUBST_TREE:
     is=new LiteralSubstitutionTree();
     res=new SimplifyingLiteralIndex(is);
-    isGenerating = false;
+    res->attachContainer(_alg->getSimplifyingClauseContainer());
+    break;
+  case BW_SIMPLIFICATION_SUBST_TREE:
+    is=new LiteralSubstitutionTree();
+    res=new SimplifyingLiteralIndex(is);
+    res->attachContainer(_alg->getToBeSimplifiedClauseContainer());
     break;
 
-  case SIMPLIFYING_UNIT_CLAUSE_SUBST_TREE:
+  case FW_SIMPLIFYING_UNIT_CLAUSE_SUBST_TREE:
     is=new LiteralSubstitutionTree();
     res=new UnitClauseLiteralIndex(is);
-    isGenerating = false;
+    res->attachContainer(_alg->getSimplifyingClauseContainer());
     break;
   case GENERATING_UNIT_CLAUSE_SUBST_TREE:
     is=new LiteralSubstitutionTree();
     res=new UnitClauseLiteralIndex(is);
-    isGenerating = true;
+    res->attachContainer(_alg->getGeneratingClauseContainer());
     break;
   case GENERATING_NON_UNIT_CLAUSE_SUBST_TREE:
     is=new LiteralSubstitutionTree();
     res=new NonUnitClauseLiteralIndex(is);
-    isGenerating = true;
+    res->attachContainer(_alg->getGeneratingClauseContainer());
     break;
 
   case SUPERPOSITION_SUBTERM_SUBST_TREE:
     tis=new TermSubstitutionTree(useConstraints);
     res=new SuperpositionSubtermIndex(tis, _alg->getOrdering());
-    isGenerating = true;
+    res->attachContainer(_alg->getGeneratingClauseContainer());
     break;
   case SUPERPOSITION_LHS_SUBST_TREE:
     tis=new TermSubstitutionTree(useConstraints);
     res=new SuperpositionLHSIndex(tis, _alg->getOrdering(), _alg->getOptions());
-    isGenerating = true;
+    res->attachContainer(_alg->getGeneratingClauseContainer());
     break;
 
   case ACYCLICITY_INDEX:
     tis = new TermSubstitutionTree();
     res = new AcyclicityIndex(tis);
-    isGenerating = true;
+    res->attachContainer(_alg->getGeneratingClauseContainer());
     break;
 
-  case DEMODULATION_SUBTERM_SUBST_TREE:
+  case BW_DEMODULATION_SUBTERM_SUBST_TREE:
     tis=new TermSubstitutionTree();
     res=new DemodulationSubtermIndex(tis);
-    isGenerating = false;
+    res->attachContainer(_alg->getToBeSimplifiedClauseContainer());
     break;
-  case DEMODULATION_LHS_SUBST_TREE:
+  case FW_DEMODULATION_LHS_SUBST_TREE:
 //    tis=new TermSubstitutionTree();
     tis=new CodeTreeTIS();
     res=new DemodulationLHSIndex(tis, _alg->getOrdering(), _alg->getOptions());
-    isGenerating = false;
+    res->attachContainer(_alg->getSimplifyingClauseContainer());
     break;
 
   case FW_SUBSUMPTION_CODE_TREE:
     res=new CodeTreeSubsumptionIndex();
-    isGenerating = false;
+    res->attachContainer(_alg->getSimplifyingClauseContainer());
     break;
 
   case FW_SUBSUMPTION_SUBST_TREE:
     is=new LiteralSubstitutionTree();
 //    is=new CodeTreeLIS();
     res=new FwSubsSimplifyingLiteralIndex(is);
-    isGenerating = false;
+    res->attachContainer(_alg->getSimplifyingClauseContainer());
     break;
 
-  case REWRITE_RULE_SUBST_TREE:
+  case FW_REWRITE_RULE_SUBST_TREE:
     is=new LiteralSubstitutionTree();
     res=new RewriteRuleIndex(is, _alg->getOrdering());
-    isGenerating = false;
+    res->attachContainer(_alg->getSimplifyingClauseContainer());
     break;
 
-  case GLOBAL_SUBSUMPTION_INDEX:
+  case FW_GLOBAL_SUBSUMPTION_INDEX:
     res = new GroundingIndex(_alg->getOptions());
-    isGenerating = false;
+    res->attachContainer(_alg->getSimplifyingClauseContainer());
     break;
 
   default:
     INVALID_OPERATION("Unsupported IndexType.");
   }
-  if(isGenerating) {
-    res->attachContainer(_alg->getGeneratingClauseContainer());
-  }
-  else {
-    res->attachContainer(_alg->getSimplifyingClauseContainer());
-  }
+
   return res;
 }

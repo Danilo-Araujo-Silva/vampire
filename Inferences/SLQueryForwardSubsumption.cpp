@@ -57,14 +57,14 @@ void SLQueryForwardSubsumption::attach(SaturationAlgorithm* salg)
   CALL("SLQueryForwardSubsumption::attach");
   ForwardSimplificationEngine::attach(salg);
   _index=static_cast<SimplifyingLiteralIndex*>(
-	  _salg->getIndexManager()->request(SIMPLIFYING_SUBST_TREE) );
+	  _salg->getIndexManager()->request(FW_SIMPLIFICATION_SUBST_TREE) );
 }
 
 void SLQueryForwardSubsumption::detach()
 {
   CALL("SLQueryForwardSubsumption::detach");
   _index=0;
-  _salg->getIndexManager()->release(SIMPLIFYING_SUBST_TREE);
+  _salg->getIndexManager()->release(FW_SIMPLIFICATION_SUBST_TREE);
   ForwardSimplificationEngine::detach();
 }
 

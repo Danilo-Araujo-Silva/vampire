@@ -43,7 +43,8 @@ public:
   Discount(Problem& prb, const Options& opt)
     : SaturationAlgorithm(prb, opt) {}
 
-  virtual ClauseContainer* getSimplifyingClauseContainer() override;
+  virtual ClauseContainer* getSimplifyingClauseContainer() override { return _active; };
+  virtual ClauseContainer* getToBeSimplifiedClauseContainer() override { return _active; };
 
 protected:
 

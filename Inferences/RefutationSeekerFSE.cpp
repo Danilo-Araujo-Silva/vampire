@@ -53,14 +53,14 @@ void RefutationSeekerFSE::attach(SaturationAlgorithm* salg)
   CALL("SLQueryForwardSubsumption::attach");
   ForwardSimplificationEngine::attach(salg);
   _index=static_cast<UnitClauseLiteralIndex*>(
-	  _salg->getIndexManager()->request(SIMPLIFYING_UNIT_CLAUSE_SUBST_TREE) );
+	  _salg->getIndexManager()->request(FW_SIMPLIFYING_UNIT_CLAUSE_SUBST_TREE) );
 }
 
 void RefutationSeekerFSE::detach()
 {
   CALL("SLQueryForwardSubsumption::detach");
   _index=0;
-  _salg->getIndexManager()->release(SIMPLIFYING_UNIT_CLAUSE_SUBST_TREE);
+  _salg->getIndexManager()->release(FW_SIMPLIFYING_UNIT_CLAUSE_SUBST_TREE);
   ForwardSimplificationEngine::detach();
 }
 

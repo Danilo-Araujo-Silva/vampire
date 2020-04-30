@@ -97,7 +97,8 @@ public:
   void onNonRedundantClause(Clause* c);
   void onParenthood(Clause* cl, Clause* parent);
 
-  virtual ClauseContainer* getSimplifyingClauseContainer() = 0;
+  virtual ClauseContainer* getSimplifyingClauseContainer() = 0; // the container whose clauses we use to simplify clauses in the 'toBeSimplifiedClauseContainer'
+  virtual ClauseContainer* getToBeSimplifiedClauseContainer() = 0; // the container whose clauses get simplified by clauses from the 'simplifyingClauseContainer'
   ClauseContainer* getGeneratingClauseContainer() { return _active; }
   ExtensionalityClauseContainer* getExtensionalityClauseContainer() {
     return _extensionality;

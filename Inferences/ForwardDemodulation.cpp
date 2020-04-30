@@ -64,7 +64,7 @@ void ForwardDemodulation::attach(SaturationAlgorithm* salg)
   CALL("ForwardDemodulation::attach");
   ForwardSimplificationEngine::attach(salg);
   _index=static_cast<DemodulationLHSIndex*>(
-	  _salg->getIndexManager()->request(DEMODULATION_LHS_SUBST_TREE) );
+	  _salg->getIndexManager()->request(FW_DEMODULATION_LHS_SUBST_TREE) );
 
   _preorderedOnly=getOptions().forwardDemodulation()==Options::Demodulation::PREORDERED;
 }
@@ -73,7 +73,7 @@ void ForwardDemodulation::detach()
 {
   CALL("ForwardDemodulation::detach");
   _index=0;
-  _salg->getIndexManager()->release(DEMODULATION_LHS_SUBST_TREE);
+  _salg->getIndexManager()->release(FW_DEMODULATION_LHS_SUBST_TREE);
   ForwardSimplificationEngine::detach();
 }
 

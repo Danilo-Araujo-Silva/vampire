@@ -66,14 +66,14 @@ void BackwardSubsumptionResolution::attach(SaturationAlgorithm* salg)
   CALL("BackwardSubsumptionResolution::attach");
   BackwardSimplificationEngine::attach(salg);
   _index=static_cast<SimplifyingLiteralIndex*>(
-	  _salg->getIndexManager()->request(SIMPLIFYING_SUBST_TREE) );
+	  _salg->getIndexManager()->request(BW_SIMPLIFICATION_SUBST_TREE) );
 }
 
 void BackwardSubsumptionResolution::detach()
 {
   CALL("BackwardSubsumptionResolution::detach");
   _index=0;
-  _salg->getIndexManager()->release(SIMPLIFYING_SUBST_TREE);
+  _salg->getIndexManager()->release(BW_SIMPLIFICATION_SUBST_TREE);
   BackwardSimplificationEngine::detach();
 }
 
