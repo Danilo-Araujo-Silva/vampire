@@ -155,9 +155,6 @@ Index* IndexManager::create(IndexType t)
   switch(t) {
   case GENERATING_SUBST_TREE:
     is=new LiteralSubstitutionTree(useConstraints);
-#if VDEBUG
-    //is->markTagged();
-#endif
     _genLitIndex=is;
     res=new GeneratingLiteralIndex(is);
     isGenerating = true;
@@ -186,9 +183,6 @@ Index* IndexManager::create(IndexType t)
 
   case SUPERPOSITION_SUBTERM_SUBST_TREE:
     tis=new TermSubstitutionTree(useConstraints);
-#if VDEBUG
-    //tis->markTagged();
-#endif
     res=new SuperpositionSubtermIndex(tis, _alg->getOrdering());
     isGenerating = true;
     break;
