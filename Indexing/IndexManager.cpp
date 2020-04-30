@@ -233,11 +233,6 @@ Index* IndexManager::create(IndexType t)
     isGenerating = false;
     break;
 
-//  case ARITHMETIC_INDEX:
-//    res=new ArithmeticIndex();
-//    isGenerating = false;
-//    break;
-
   default:
     INVALID_OPERATION("Unsupported IndexType.");
   }
