@@ -47,12 +47,8 @@ public:
 
 
 protected:
-
-  //overrides SaturationAlgorithm::isComplete
-  bool isComplete();
-
-  //overrides SaturationAlgorithm::onUnprocessedSelected
-  void onUnprocessedSelected(Clause* c);
+  virtual bool isComplete() override;
+  virtual void onUnprocessedSelected(Clause* c) override;
 
   bool shouldUpdateLimits();
 

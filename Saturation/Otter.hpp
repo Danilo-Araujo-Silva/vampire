@@ -42,28 +42,16 @@ public:
 
   Otter(Problem& prb, const Options& opt);
 
-  ClauseContainer* getSimplifyingClauseContainer();
+  virtual ClauseContainer* getSimplifyingClauseContainer() override;
 
 protected:
 
-  //overrides SaturationAlgorithm::onSOSClauseAdded
-  void onSOSClauseAdded(Clause* cl);
-
-  //overrides SaturationAlgorithm::onActiveRemoved
-  void onActiveRemoved(Clause* cl);
-
-  //overrides SaturationAlgorithm::onPassiveAdded
-  void onPassiveAdded(Clause* cl);
-  //overrides SaturationAlgorithm::onPassiveRemoved
-  void onPassiveRemoved(Clause* cl);
-
-  //overrides SaturationAlgorithm::onClauseRetained
-  void onClauseRetained(Clause* cl);
-
-
-
-  //overrides SaturationAlgorithm::handleUnsuccessfulActivation
-  void handleUnsuccessfulActivation(Clause* c);
+  virtual void onSOSClauseAdded(Clause* cl) override;
+  virtual void onActiveRemoved(Clause* cl) override;
+  virtual void onPassiveAdded(Clause* cl) override;
+  virtual void onPassiveRemoved(Clause* cl) override;
+  virtual void onClauseRetained(Clause* cl) override;
+  virtual void handleUnsuccessfulActivation(Clause* c) override;
 
   /**
    * Dummy container for simplification indexes to subscribe
