@@ -98,7 +98,7 @@ public:
   void onParenthood(Clause* cl, Clause* parent);
 
   virtual ClauseContainer* getSimplifyingClauseContainer() = 0;
-  virtual ClauseContainer* getGeneratingClauseContainer() { return _active; }
+  ClauseContainer* getGeneratingClauseContainer() { return _active; }
   ExtensionalityClauseContainer* getExtensionalityClauseContainer() {
     return _extensionality;
   }
